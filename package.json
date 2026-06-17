@@ -1,0 +1,12 @@
+{
+  "name": "restaurant-health-app",
+  "version": "1.0.0",
+  "description": "Fetch restaurant health inspection data from GNR and Georgia DPH",
+  "main": "fetch-inspections.js",
+  "scripts": {
+    "start": "node fetch-inspections.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  }
+}
