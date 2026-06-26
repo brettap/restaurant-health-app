@@ -62,7 +62,7 @@ async function fetchFacilitiesForCounty(county) {
         f.columns && Object.values(f.columns).some(v =>
           typeof v === 'string' && v.includes('Food Service')
         )
-      );
+      ).map(f => ({ ...f, county }));
 
       allFacilities.push(...foodOnly);
       console.log(`  Page ${page}: ${data.length} total, ${foodOnly.length} food service`);
