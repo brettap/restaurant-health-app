@@ -29,6 +29,24 @@
     .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .meta { font-size: 12px; color: #78716c; margin-top: 2px; }
     .loading, .empty { padding: 40px 20px; text-align: center; color: #78716c; font-size: 14px; }
+    .detail { position: fixed; top: 0; right: -100%; width: 100%; max-width: 480px; height: 100vh; background: #fff; z-index: 100; transition: right 0.3s ease; overflow-y: auto; }
+    .detail.open { right: 0; }
+    .detail-header { padding: 20px; border-bottom: 1px solid #e7e5e4; position: sticky; top: 0; background: #fff; }
+    .back-btn { font-size: 14px; color: #78716c; cursor: pointer; margin-bottom: 12px; display: inline-block; }
+    .detail-name { font-size: 20px; font-weight: 600; }
+    .detail-address { font-size: 13px; color: #78716c; margin-top: 4px; }
+    .detail-county { font-size: 13px; color: #78716c; }
+    .insp-block { padding: 16px 20px; border-bottom: 1px solid #f0efed; }
+    .insp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .insp-score { font-size: 18px; font-weight: 600; }
+    .insp-date { font-size: 13px; color: #78716c; }
+    .insp-inspector { font-size: 12px; color: #a8a29e; margin-top: 2px; }
+    .violation { background: #f9f8f7; border-radius: 6px; padding: 10px 12px; margin-top: 8px; font-size: 12px; }
+    .viol-code { font-weight: 600; color: #1c1c1a; margin-bottom: 4px; }
+    .viol-points { color: #dc2626; font-weight: 600; }
+    .viol-status { color: #78716c; margin-top: 2px; }
+    .viol-notes { color: #57534e; margin-top: 4px; font-style: italic; }
+    .no-violations { font-size: 13px; color: #78716c; padding: 8px 0; }
   </style>
 </head>
 <body>
@@ -55,6 +73,15 @@
       </div>
     </div>
     <div id="list"><div class="loading">Loading inspections…</div></div>
+    <div class="detail" id="detail">
+        <div class="detail-header">
+            <span class="back-btn" id="back-btn">← Back</span>
+            <div class="detail-name" id="detail-name"></div>
+            <div class="detail-address" id="detail-address"></div>
+            <div class="detail-county" id="detail-county"></div>
+        </div>
+        <div id="detail-body"></div>
+    </div>
   </div>
 
   <script>
@@ -135,10 +162,10 @@
 
       
 
-      list.innerHTML = rows.map(r => {
+      list.innerHTML = rows.map((r, idx) => {
         const c = gradeColors(r.grade);
         return `
-          <div class="row">
+          <div class="row" data-idx="${idx}">
             <div class="badge" style="background:${c.bg}">
               <span class="g" style="color:${c.fg}">${r.grade || "?"}</span>
               <span class="s" style="color:${c.fg}">${r.score ?? ""}</span>
@@ -160,6 +187,78 @@
       activeCounty = e.target.dataset.county;
       render();
     });
+
+    async function openDetail(restaurant) {
+            // Set header info
+            document.getElementById('detail-name').textContent = restaurant.name;
+            document.getElementById('detail-address').textContent = restaurant.address;
+            document.getElementById('detail-county').textContent = restaurant.county;
+            document.getElementById('detail-body').innerHTML = '<div class="loading">Loading history…</div>';
+
+            // Open the panel
+            document.getElementById('detail').classList.add('open');
+
+            // Fetch full inspection history
+            const url = `${SUPABASE_URL}/rest/v1/inspections?select=score,inspection_date,inspection_purpose,inspector_name,violations(violation_code,points,corrected_on_site,is_repeat,inspector_notes)&restaurant_id=eq.${restaurant.id}&order=inspection_date.desc`;
+            const res = await fetch(url, {
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            const inspections = await res.json();
+
+            if (!inspections.length) {
+                document.getElementById('detail-body').innerHTML = '<div class="empty">No inspection history found.</div>';
+                return;
+            }
+
+            document.getElementById('detail-body').innerHTML = inspections.map(insp => {
+                const grade = deriveGrade(insp.score);
+                const c = gradeColors(grade);
+                const violations = insp.violations || [];
+
+                return `
+      <div class="insp-block">
+        <div class="insp-header">
+          <div class="badge" style="background:${c.bg}">
+            <span class="g" style="color:${c.fg}">${grade || '?'}</span>
+            <span class="s" style="color:${c.fg}">${insp.score ?? ''}</span>
+          </div>
+          <div>
+            <div class="insp-score">${formatDate(insp.inspection_date)}</div>
+            <div class="insp-inspector">${insp.inspector_name || ''} ${insp.inspection_purpose ? '· ' + insp.inspection_purpose : ''}</div>
+          </div>
+        </div>
+        ${violations.length === 0
+                        ? '<div class="no-violations">✓ No violations</div>'
+                        : violations.map(v => `
+            <div class="violation">
+              <div class="viol-code">${v.violation_code || ''}</div>
+              <div class="viol-status">
+                <span class="viol-points">${v.points ? '-' + v.points + ' pts' : ''}</span>
+                ${v.corrected_on_site ? ' · ✓ Corrected on site' : ''}
+                ${v.is_repeat ? ' · ⚠ Repeat violation' : ''}
+              </div>
+              ${v.inspector_notes ? `<div class="viol-notes">${v.inspector_notes}</div>` : ''}
+            </div>
+          `).join('')
+                    }
+      </div>
+    `;
+            }).join('');
+        }
+
+        document.getElementById('back-btn').addEventListener('click', () => {
+            document.getElementById('detail').classList.remove('open');
+        });
+
+        document.getElementById('list').addEventListener('click', e => {
+            const row = e.target.closest('.row');
+            if (!row) return;
+            const idx = row.dataset.idx;
+            const visibleRows = allRows
+                .filter(r => activeCounty === 'all' || r.county === activeCounty)
+                .filter(r => !searchTerm || r.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            openDetail(visibleRows[idx]);
+        }); 
 
     loadData();
   </script>
