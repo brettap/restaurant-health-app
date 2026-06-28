@@ -84,7 +84,7 @@ function main() {
 
         restaurantMap.set(record.facilityId, {
             facility_id: record.facilityId,
-            name: record.facilityName,
+            name: record.facilityName ? record.facilityName.replace(/^!+/, '').trim() : null,
             address: cleanAddress(record.facilityAddress),
             county: COUNTY_NAMES[record.facilityCounty] || record.facilityCounty
         });
