@@ -88,13 +88,13 @@
         console.log("Supabase response:", data);
 
         allRows = data
-          .filter(i => i.restaurants) // skip any inspection with no linked restaurant
+          .filter(i => i.restaurants)
           .map(i => ({
             name: i.restaurants.name,
             address: i.restaurants.address || "",
             county: i.restaurants.county || "",
             score: i.score,
-            grade: i.grade,
+            grade: i.grade || deriveGrade(i.score),
             date: i.inspection_date
           }));
 
@@ -115,6 +115,14 @@
         list.innerHTML = `<div class="empty">No restaurants match your search.</div>`;
         return;
       }
+
+      function deriveGrade(score) {
+            if (score >= 90) return 'A';
+            if (score >= 80) return 'B';
+            if (score >= 70) return 'C';
+            if (score !== null) return 'U';
+            return null;
+        }
 
       list.innerHTML = rows.map(r => {
         const c = gradeColors(r.grade);
