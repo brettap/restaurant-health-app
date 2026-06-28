@@ -64,6 +64,14 @@
     let activeCounty = "all";
     let searchTerm = "";
 
+    function deriveGrade(score) {
+            if (score >= 90) return 'A';
+            if (score >= 80) return 'B';
+            if (score >= 70) return 'C';
+            if (score !== null) return 'U';
+            return null;
+        }
+        
     function gradeColors(grade) {
       if (grade === "A") return { bg: "#E1F5EE", fg: "#085041" };
       if (grade === "B") return { bg: "#FAEEDA", fg: "#633806" };
@@ -116,13 +124,7 @@
         return;
       }
 
-      function deriveGrade(score) {
-            if (score >= 90) return 'A';
-            if (score >= 80) return 'B';
-            if (score >= 70) return 'C';
-            if (score !== null) return 'U';
-            return null;
-        }
+      
 
       list.innerHTML = rows.map(r => {
         const c = gradeColors(r.grade);
