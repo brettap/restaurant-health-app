@@ -199,7 +199,8 @@
             document.getElementById('detail').classList.add('open');
 
             // Fetch full inspection history
-            const url = `${SUPABASE_URL}/rest/v1/inspections?select=score,inspection_date,inspection_purpose,inspector_name,violations(violation_code,points,corrected_on_site,is_repeat,inspector_notes)&restaurant_id=eq.${restaurant.id}&order=inspection_date.desc`;
+            // Fetch full inspection history
+            const url = `${SUPABASE_URL}/rest/v1/inspections?select=id,score,inspection_date,inspection_purpose,inspector_name&restaurant_id=eq.${restaurant.id}&order=inspection_date.desc`;
             const res = await fetch(url, {
                 headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
             });
@@ -210,10 +211,25 @@
                 return;
             }
 
+            // Fetch violations for all inspections
+            const inspIds = inspections.map(i => i.id).join(',');
+            const violUrl = `${SUPABASE_URL}/rest/v1/violations?select=inspection_id,violation_code,points,corrected_on_site,is_repeat,inspector_notes&inspection_id=in.(${inspIds})`;
+            const violRes = await fetch(violUrl, {
+                headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            const allViolations = await violRes.json();
+
+            // Group violations by inspection_id
+            const violByInsp = {};
+            allViolations.forEach(v => {
+                if (!violByInsp[v.inspection_id]) violByInsp[v.inspection_id] = [];
+                violByInsp[v.inspection_id].push(v);
+            });
+
             document.getElementById('detail-body').innerHTML = inspections.map(insp => {
                 const grade = deriveGrade(insp.score);
                 const c = gradeColors(grade);
-                const violations = insp.violations || [];
+                const violations = violByInsp[insp.id] || [];
 
                 return `
       <div class="insp-block">
