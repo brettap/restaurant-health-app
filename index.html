@@ -103,7 +103,6 @@
                 }
 
                 allRows = allRestaurants
-                    allRows = allRestaurants
                     .map(r => ({
                         id: r.id,
                         name: r.name,
@@ -112,7 +111,7 @@
                         score: r.score,
                         grade: r.grade || deriveGrade(r.score),
                         date: r.inspection_date
-                    })))
+                    }))
                     .filter(r => r.score !== null)
                     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
