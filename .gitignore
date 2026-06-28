@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 gnr-data.json
 transformed-data.json
+state-inspections.json
+state-transformed.json
