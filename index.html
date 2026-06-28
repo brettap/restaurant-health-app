@@ -92,7 +92,7 @@
                 let offset = 0;
 
                 while (true) {
-                    const url = `${SUPABASE_URL}/rest/v1/restaurants?select=name,county,inspections(score,grade,inspection_date)&limit=1000&offset=${offset}`;
+                    const url = `${SUPABASE_URL}/rest/v1/latest_inspections?select=name,county,score,grade,inspection_date&limit=1000&offset=${offset}`;
                     const res = await fetch(url, {
                         headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
                     });
@@ -103,20 +103,13 @@
                 }
 
                 allRows = allRestaurants
-                    .map(r => {
-                        // Get most recent inspection
-                        const inspections = r.inspections || [];
-                        const latest = inspections.sort((a, b) =>
-                            new Date(b.inspection_date) - new Date(a.inspection_date)
-                        )[0];
-                        return {
-                            name: r.name,
-                            county: r.county || "",
-                            score: latest?.score ?? null,
-                            grade: latest?.grade || deriveGrade(latest?.score),
-                            date: latest?.inspection_date || null
-                        };
-                    })
+                    .map(r => ({
+                        name: r.name,
+                        county: r.county || "",
+                        score: r.score,
+                        grade: r.grade || deriveGrade(r.score),
+                        date: r.inspection_date
+                    }))
                     .filter(r => r.score !== null)
                     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
