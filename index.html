@@ -89,7 +89,7 @@
     async function loadData() {
       try {
         // Get inspections joined with their restaurant
-        const url = `${SUPABASE_URL}/rest/v1/inspections?select=score,grade,inspection_date,restaurants(name,address,county)&order=inspection_date.desc`;
+        const url = `${SUPABASE_URL}/rest/v1/restaurants?select=name,address,county,inspections(score,grade,inspection_date)&order=name.asc&limit=5000`;
         const res = await fetch(url, {
           headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
         });
