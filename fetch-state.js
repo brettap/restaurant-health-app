@@ -12,15 +12,7 @@ function sleep(ms) {
 
 // Metro Atlanta counties on the state portal
 const COUNTIES = [
-  'CHEROKEE',
-  'CLAYTON',
-  'COBB',
-  'DEKALB',
-  'DOUGLAS',
-  'FAYETTE',
-  'FORSYTH',
-  'FULTON',
-  'HENRY'
+    'WALTON'
 ];
 
 const BASE_URL = 'https://ga.healthinspections.us/stateofgeorgia/API/index.cfm';
