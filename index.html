@@ -87,31 +87,44 @@
     }
 
     async function loadData() {
-      try {
-        // Get inspections joined with their restaurant
-        const url = `${SUPABASE_URL}/rest/v1/restaurants?select=name,address,county,inspections(score,grade,inspection_date)&order=name.asc&limit=5000`;
-        const res = await fetch(url, {
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
-        });
-        const data = await res.json();
-        console.log("Supabase response:", data);
+            try {
+                let allRestaurants = [];
+                let offset = 0;
 
-        allRows = data
-          .filter(i => i.restaurants)
-          .map(i => ({
-            name: i.restaurants.name,
-            address: i.restaurants.address || "",
-            county: i.restaurants.county || "",
-            score: i.score,
-            grade: i.grade || deriveGrade(i.score),
-            date: i.inspection_date
-          }));
+                while (true) {
+                    const url = `${SUPABASE_URL}/rest/v1/restaurants?select=name,county,inspections(score,grade,inspection_date)&limit=1000&offset=${offset}`;
+                    const res = await fetch(url, {
+                        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+                    });
+                    const data = await res.json();
+                    if (!Array.isArray(data) || data.length === 0) break;
+                    allRestaurants.push(...data);
+                    offset += 1000;
+                }
 
-        render();
-      } catch (err) {
-        document.getElementById("list").innerHTML = `<div class="empty">Couldn't load data. ${err.message}</div>`;
-      }
-    }
+                allRows = allRestaurants
+                    .map(r => {
+                        // Get most recent inspection
+                        const inspections = r.inspections || [];
+                        const latest = inspections.sort((a, b) =>
+                            new Date(b.inspection_date) - new Date(a.inspection_date)
+                        )[0];
+                        return {
+                            name: r.name,
+                            county: r.county || "",
+                            score: latest?.score ?? null,
+                            grade: latest?.grade || deriveGrade(latest?.score),
+                            date: latest?.inspection_date || null
+                        };
+                    })
+                    .filter(r => r.score !== null)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                render();
+            } catch (err) {
+                document.getElementById("list").innerHTML = `<div class="empty">Couldn't load data. ${err.message}</div>`;
+            }
+        }
 
     function render() {
       const list = document.getElementById("list");
