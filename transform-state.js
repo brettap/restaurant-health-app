@@ -69,12 +69,25 @@ function main() {
   const restaurantMap = new Map();
   inspections.forEach(record => {
     if (!restaurantMap.has(record.facilityId)) {
-      restaurantMap.set(record.facilityId, {
-        facility_id: record.facilityId,
-        name: record.facilityName,
-        address: cleanAddress(record.facilityAddress),
-        county: record.facilityCounty
-      });
+        const COUNTY_NAMES = {
+            'CHEROKEE': 'Cherokee',
+            'CLAYTON': 'Clayton',
+            'COBB': 'Cobb',
+            'DEKALB': 'DeKalb',
+            'DOUGLAS': 'Douglas',
+            'FAYETTE': 'Fayette',
+            'FORSYTH': 'Forsyth',
+            'FULTON': 'Fulton',
+            'HENRY': 'Henry',
+            'WALTON': 'Walton'
+        };
+
+        restaurantMap.set(record.facilityId, {
+            facility_id: record.facilityId,
+            name: record.facilityName,
+            address: cleanAddress(record.facilityAddress),
+            county: COUNTY_NAMES[record.facilityCounty] || record.facilityCounty
+        });
     }
   });
 
